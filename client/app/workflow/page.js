@@ -1,29 +1,29 @@
 import React from "react";
-import { cookies } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import WorkflowListingClient from "./WorkflowListingClient";
 
-async function getWorkflowDefs(cookieHeader) {
-  const endpoint = `http://127.0.0.1:8000/api/workflow/get-workflow-defs`;
-  try {
-    const res = await fetch(endpoint, {
-      cache: 'no-store',
-      headers: {
-        'Cookie': cookieHeader || '',
-      },
-    });
+const API_URL = process.env.API_URL || "http://127.0.0.1:8000";
 
+async function getWorkflowDefs(token) {
+  try {
+    const res = await fetch(`${API_URL}/api/workflow/get-workflow-defs`, {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!res.ok) return [];
     return await res.json();
-  } catch (error) {
-    console.error("Error fetching workflows on server:", error);
+  } catch {
     return [];
   }
 }
 
 const WorkflowList = async () => {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
-  const initialWorkflowList = await getWorkflowDefs(cookieHeader);
+  const { getToken } = await auth();
+  const token = await getToken();
+  if (!token) redirect("/sign-in");
+
+  const initialWorkflowList = await getWorkflowDefs(token);
 
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-white overflow-x-hidden selection:bg-white/20">

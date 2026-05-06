@@ -1,43 +1,45 @@
-import React from 'react';
-import { cookies } from "next/headers";
+import React from "react";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import WorkflowBuilderClient from "./WorkflowBuilderClient";
 
-async function fetchWorkflowData(id, cookieHeader) {
-  const baseUrl = "http://127.0.0.1:8000/api/workflow";
+const API_URL = process.env.API_URL || "http://127.0.0.1:8000";
+
+async function fetchWorkflowData(id, token) {
   try {
     const [workflowRes, schemasRes] = await Promise.all([
-      fetch(`${baseUrl}/get-workflow-def/${id}`, {
-        cache: 'no-store',
-        headers: { 'Cookie': cookieHeader || '' }
+      fetch(`${API_URL}/api/workflow/get-workflow-def/${id}`, {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
       }),
-      fetch(`${baseUrl}/${id}/node-schemas`, {
-        cache: 'no-store',
-        headers: { 'Cookie': cookieHeader || '' }
-      })
+      fetch(`${API_URL}/api/workflow/${id}/node-schemas`, {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     ]);
 
     const initialWorkflowData = workflowRes.ok ? await workflowRes.json() : null;
     const initialNodeSchemas = schemasRes.ok ? await schemasRes.json() : null;
 
     return { initialWorkflowData, initialNodeSchemas };
-  } catch (error) {
-    console.error("Error fetching workflow data on server:", error);
+  } catch {
     return { initialWorkflowData: null, initialNodeSchemas: null };
   }
 }
 
 export default async function WorkflowPage({ params }) {
   const { id } = await params;
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
+  const { getToken } = await auth();
+  const token = await getToken();
+  if (!token) redirect("/sign-in");
 
-  const { initialWorkflowData, initialNodeSchemas } = await fetchWorkflowData(id, cookieHeader);
+  const { initialWorkflowData, initialNodeSchemas } = await fetchWorkflowData(id, token);
 
   return (
     <div className="h-dvh w-full bg-black">
-      <WorkflowBuilderClient 
-        initialWorkflowData={initialWorkflowData} 
-        initialNodeSchemas={initialNodeSchemas} 
+      <WorkflowBuilderClient
+        initialWorkflowData={initialWorkflowData}
+        initialNodeSchemas={initialNodeSchemas}
       />
     </div>
   );

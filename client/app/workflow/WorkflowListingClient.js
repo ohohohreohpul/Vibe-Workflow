@@ -2,7 +2,6 @@
 
 import axios from "axios";
 import Link from "next/link";
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { FaRegEdit } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa6";
@@ -10,17 +9,24 @@ import { FiTrash2 } from "react-icons/fi";
 import { GoWorkflow } from "react-icons/go";
 import { SlOptions } from "react-icons/sl";
 import { toast } from "react-hot-toast";
-import { HiOutlineArrowRight } from "react-icons/hi2";
+import { useAuth, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 const WorkflowListingClient = ({ initialWorkflowList }) => {
   const router = useRouter();
+  const { getToken } = useAuth();
 
   const [workflowList, setWorkflowList] = useState(initialWorkflowList || []);
   const [loading, setLoading] = useState(false);
   const [dropDown, setDropDown] = useState(0);
   const [workflowName, setWorkflowName] = useState("");
   const [renameId, setRenameId] = useState(null);
+  const [credits, setCredits] = useState(null);
+
+  const authHeaders = async () => {
+    const token = await getToken();
+    return { Authorization: `Bearer ${token}` };
+  };
 
   useEffect(() => {
     const fromBuilder = sessionStorage.getItem("fromWorkflowBuilder");
@@ -28,95 +34,74 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
       sessionStorage.removeItem("fromWorkflowBuilder");
       window.location.reload();
     }
+    fetchCredits();
   }, []);
 
-  const getUserWorkflowDefs = () => {
-    setLoading(true);
-    axios.get('/api/workflow/get-workflow-defs')
-      .then((response) => {
-        setWorkflowList(response.data);
-      })
-      .catch((error) => {
-        console.error(error);
-        toast.error(error.response?.data?.error || "Failed to fetch workflows");
-        setWorkflowList([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+  const fetchCredits = async () => {
+    try {
+      const headers = await authHeaders();
+      const res = await axios.get("/api/user/me", { headers });
+      setCredits(res.data.credits);
+    } catch {}
   };
 
-  const handleDeleteWorkflow = (deleteId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this workflow? This action cannot be undone."
-    );
-    if (!confirmDelete) return;
-
-    axios.delete(`/api/workflow/delete-workflow-def/${deleteId}`)
-      .then(() => {
-        setWorkflowList(prev => prev.filter(w => w.id !== deleteId));
-        setDropDown(0);
-        toast.success("Workflow deleted successfully");
-      })
-      .catch((error) => {
-        console.error(error);
-        toast.error(error.response?.data?.error || "Failed to delete workflow");
-      });
+  const handleDeleteWorkflow = async (deleteId) => {
+    if (!window.confirm("Are you sure you want to delete this workflow? This action cannot be undone.")) return;
+    try {
+      const headers = await authHeaders();
+      await axios.delete(`/api/workflow/delete-workflow-def/${deleteId}`, { headers });
+      setWorkflowList((prev) => prev.filter((w) => w.id !== deleteId));
+      setDropDown(0);
+      toast.success("Workflow deleted");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to delete workflow");
+    }
   };
 
-  const handleRenameWorkflow = (id, newName) => {
+  const handleRenameWorkflow = async (id, newName) => {
     if (!newName.trim()) return;
-
     setLoading(true);
-    axios.post(`/api/workflow/update-name/${id}`, { name: newName })
-      .then(() => {
-        setRenameId(null);
-        setWorkflowList((prev) =>
-          prev.map((w) =>
-            w.id === id
-              ? { ...w, name: newName, updated_at: new Date().toISOString() }
-              : w
-          )
-        );
-        toast.success("Workflow renamed");
-      })
-      .catch((error) => {
-        console.error(error);
-        setRenameId(null);
-        toast.error(error.response?.data?.error || "Failed to rename workflow");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    try {
+      const headers = await authHeaders();
+      await axios.post(`/api/workflow/update-name/${id}`, { name: newName }, { headers });
+      setRenameId(null);
+      setWorkflowList((prev) =>
+        prev.map((w) =>
+          w.id === id ? { ...w, name: newName, updated_at: new Date().toISOString() } : w
+        )
+      );
+      toast.success("Workflow renamed");
+    } catch (error) {
+      setRenameId(null);
+      toast.error(error.response?.data?.error || "Failed to rename workflow");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateWorkFlow = async () => {
+    setLoading(true);
+    try {
+      const headers = await authHeaders();
+      const response = await axios.post(
+        "/api/workflow/create",
+        { workflow_id: null, name: "Untitled Workflow", edges: [], data: { nodes: [] } },
+        { headers }
+      );
+      window.location.href = `/workflow/${response.data.workflow_id}`;
+    } catch (error) {
+      setLoading(false);
+      toast.error(error.response?.data?.detail || "Server error");
+    }
   };
 
   const formatDateTime = (isoString) => {
     if (!isoString) return "";
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit'
+    return new Date(isoString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
     });
-  };
-
-  const handleCreateWorkFlow = () => {
-    const workflowPayload = {
-      workflow_id: null,
-      name: "Untitled Workflow",
-      edges: [],
-      data: { nodes: [] },
-    };
-    setLoading(true);
-    axios.post("/api/workflow/create", workflowPayload)
-      .then((response) => {
-        window.location.href = `/workflow/${response.data.workflow_id}`;
-      })
-      .catch((error) => {
-        console.error(error);
-        setLoading(false);
-        toast.error(error.response?.data?.detail || "Server error");
-      });
   };
 
   return (
@@ -131,19 +116,33 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                 </div>
                 <span className="font-mono font-bold text-white/40 text-sm tracking-tighter">0123</span>
               </div>
-              <h1 className="text-4xl font-black tracking-tight text-white">
-                Workflows
-              </h1>
+              <h1 className="text-4xl font-black tracking-tight text-white">Workflows</h1>
               <p className="text-zinc-500 mt-2 font-medium">Create and manage your AI processing pipelines.</p>
             </div>
-            <button
-              onClick={handleCreateWorkFlow}
-              disabled={loading}
-              className="group flex items-center gap-2 bg-white hover:bg-zinc-100 text-black px-6 py-3 rounded-full font-bold transition-all shadow-[0_4px_20px_rgba(255,255,255,0.08)] active:scale-95 disabled:opacity-50 text-sm"
-            >
-              <FaPlus size={12} />
-              New Workflow
-            </button>
+
+            <div className="flex items-center gap-3">
+              {/* Credits badge */}
+              <Link
+                href="/billing"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+              >
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Credits</span>
+                <span className="text-sm font-black text-white">
+                  {credits === null ? "—" : credits.toLocaleString()}
+                </span>
+              </Link>
+
+              <button
+                onClick={handleCreateWorkFlow}
+                disabled={loading}
+                className="flex items-center gap-2 bg-white hover:bg-zinc-100 text-black px-5 py-2.5 rounded-full font-bold transition-all text-sm disabled:opacity-50 active:scale-95"
+              >
+                <FaPlus size={12} />
+                New Workflow
+              </button>
+
+              <UserButton afterSignOutUrl="/" />
+            </div>
           </div>
 
           <div className="flex items-center gap-1 border-b border-white/10 w-full overflow-x-auto no-scrollbar">
@@ -167,7 +166,7 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
               {workflowList.map((work) => (
                 <div
                   key={work.id}
-                  className="group relative aspect-[3/4] rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-white/20 hover:bg-white/[0.05] hover:-translate-y-1 shadow-2xl"
+                  className="group relative aspect-[3/4] rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden transition-all duration-300 hover:border-white/20 hover:bg-white/[0.05] hover:-translate-y-1 shadow-2xl"
                 >
                   <Link href={`/workflow/${work.id}`} className="absolute inset-0 z-0">
                     {work.thumbnail ? (
@@ -176,10 +175,10 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                           className="absolute inset-0 bg-center bg-cover opacity-60 group-hover:opacity-100 transition-opacity transform group-hover:scale-105 duration-500"
                           style={{ backgroundImage: `url(${work.thumbnail})` }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-[#030303]/40 to-transparent shadow-[inset_0_-40px_80px_-20px_rgba(0,0,0,0.8)]" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-[#030303]/40 to-transparent" />
                       </>
                     ) : (
-                      <div className="absolute inset-0 bg-white/[0.02] group-hover:bg-white/[0.05] transition-colors flex items-center justify-center">
+                      <div className="absolute inset-0 flex items-center justify-center">
                         <GoWorkflow size={48} className="text-zinc-800" />
                       </div>
                     )}
@@ -191,13 +190,13 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                         e.preventDefault();
                         setDropDown(dropDown === work.id ? 0 : work.id);
                       }}
-                      className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white transition-all hover:scale-110 shadow-lg"
+                      className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white transition-all"
                     >
                       <SlOptions size={16} />
                     </button>
                     {dropDown === work.id && (
                       <div
-                        className="absolute right-0 mt-2 w-36 py-1 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2"
+                        className="absolute right-0 mt-2 w-36 py-1 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden"
                         onMouseLeave={() => setDropDown(0)}
                       >
                         <button
@@ -224,26 +223,24 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                   </div>
 
                   <div className="absolute bottom-0 left-0 w-full p-6 pt-12 bg-gradient-to-t from-[#030303] to-transparent flex flex-col gap-1 pointer-events-none">
-                    <h4 className={`text-base font-black truncate uppercase tracking-tight transition-colors ${work.thumbnail ? "text-white group-hover:text-zinc-200" : "text-zinc-300 group-hover:text-white"}`}>
-                      {work.name || "Untitled Flow"}
+                    <h4 className="text-base font-black truncate uppercase tracking-tight text-zinc-300 group-hover:text-white transition-colors">
+                      {work.name || "Untitled Workflow"}
                     </h4>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
-                        Updated {formatDateTime(work.updated_at)}
-                      </span>
-                    </div>
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">
+                      Updated {formatDateTime(work.updated_at)}
+                    </span>
                   </div>
                 </div>
               ))}
 
               {workflowList.length === 0 && !loading && (
-                 <div className="col-span-full py-24 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-center bg-white/[0.01]">
-                    <div className="p-6 bg-white/5 rounded-full mb-6">
-                      <GoWorkflow size={48} className="text-zinc-700" />
-                    </div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-widest mb-2">No Workflows Yet</h2>
-                    <p className="text-zinc-500 mb-8 max-w-xs font-medium">Create your first workflow by clicking the button above.</p>
-                 </div>
+                <div className="col-span-full py-24 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
+                  <div className="p-6 bg-white/5 rounded-full mb-6">
+                    <GoWorkflow size={48} className="text-zinc-700" />
+                  </div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-widest mb-2">No Workflows Yet</h2>
+                  <p className="text-zinc-500 mb-8 max-w-xs font-medium">Create your first workflow by clicking the button above.</p>
+                </div>
               )}
             </div>
           </div>
@@ -252,41 +249,37 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
 
       {renameId && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4"
           onClick={() => setRenameId(null)}
         >
           <div
-            className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in-95 duration-300"
+            className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col gap-6">
               <div className="text-center">
                 <h3 className="text-xl font-black uppercase tracking-widest text-white">Rename Workflow</h3>
-                <p className="text-zinc-500 text-xs font-bold mt-1 uppercase tracking-tighter">Enter a new name</p>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Name</label>
-                <input
-                  type="text"
-                  value={workflowName}
-                  autoFocus
-                  onChange={(e) => setWorkflowName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-all font-bold uppercase tracking-tight"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleRenameWorkflow(renameId, workflowName);
-                  }}
-                />
-              </div>
-              <div className="flex gap-4 pt-4">
+              <input
+                type="text"
+                value={workflowName}
+                autoFocus
+                onChange={(e) => setWorkflowName(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-all font-bold"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameWorkflow(renameId, workflowName);
+                }}
+              />
+              <div className="flex gap-4">
                 <button
                   onClick={() => setRenameId(null)}
-                  className="flex-1 py-3 px-4 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 font-black uppercase tracking-widest text-xs transition-all"
+                  className="flex-1 py-3 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 font-black uppercase tracking-widest text-xs transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleRenameWorkflow(renameId, workflowName)}
-                  className="flex-1 py-3 px-4 rounded-xl bg-white hover:bg-zinc-100 text-black font-black uppercase tracking-widest text-xs transition-all shadow-lg"
+                  className="flex-1 py-3 rounded-xl bg-white hover:bg-zinc-100 text-black font-black uppercase tracking-widest text-xs transition-all"
                 >
                   Save
                 </button>

@@ -5,3 +5,5 @@ asyncpg
 httpx
 python-dotenv
 ruff
+PyJWT[crypto]
+stripe
