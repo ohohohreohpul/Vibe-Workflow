@@ -42,7 +42,7 @@ export default function Home() {
 
         <p className="text-lg md:text-xl text-black/50 mb-12 max-w-2xl leading-relaxed">
           0123 is a node-based AI workflow builder for generative image and video.
-          Self-host it, extend it, own it — no subscriptions, no lock-in.
+          Design, automate, and scale creative pipelines — all in one place.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -107,7 +107,7 @@ export default function Home() {
             0123
           </div>
           <div className="text-black/30 text-sm">
-            Open-source · Self-hostable · MIT License
+            © 2025 0123. All rights reserved.
           </div>
         </div>
       </footer>

@@ -66,7 +66,7 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
 
   const handleRenameWorkflow = (id, newName) => {
     if (!newName.trim()) return;
-    
+
     setLoading(true);
     axios.post(`/api/workflow/update-name/${id}`, { name: newName })
       .then(() => {
@@ -125,17 +125,23 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
         <header className="flex flex-col gap-8 mb-16">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-7 h-7 bg-white rounded-md flex items-center justify-center">
+                  <GoWorkflow className="text-black" size={16} />
+                </div>
+                <span className="font-mono font-bold text-white/40 text-sm tracking-tighter">0123</span>
+              </div>
+              <h1 className="text-4xl font-black tracking-tight text-white">
                 Workflows
               </h1>
-              <p className="text-zinc-500 mt-2 font-medium">Create and manage your asynchronous AI processing pipelines.</p>
+              <p className="text-zinc-500 mt-2 font-medium">Create and manage your AI processing pipelines.</p>
             </div>
             <button
               onClick={handleCreateWorkFlow}
               disabled={loading}
-              className="group flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-full font-bold transition-all shadow-[0_15px_30px_-10px_rgba(37,99,235,0.4)] hover:shadow-[0_20px_40px_-8px_rgba(37,99,235,0.5)] active:scale-95 disabled:opacity-50"
+              className="group flex items-center gap-2 bg-white hover:bg-zinc-100 text-black px-6 py-3 rounded-full font-bold transition-all shadow-[0_4px_20px_rgba(255,255,255,0.08)] active:scale-95 disabled:opacity-50 text-sm"
             >
-              <FaPlus />
+              <FaPlus size={12} />
               New Workflow
             </button>
           </div>
@@ -143,7 +149,7 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
           <div className="flex items-center gap-1 border-b border-white/10 w-full overflow-x-auto no-scrollbar">
             <button
               type="button"
-              className="px-6 py-4 text-sm font-black transition-all whitespace-nowrap border-b-2 uppercase tracking-widest text-blue-500 border-blue-500"
+              className="px-6 py-4 text-sm font-black transition-all whitespace-nowrap border-b-2 uppercase tracking-widest text-white border-white"
             >
               My Workflows
             </button>
@@ -152,8 +158,8 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
 
         {loading && workflowList.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-[400px]">
-            <div className="w-10 h-10 border-4 border-white/10 border-t-blue-500 rounded-full animate-spin" />
-            <span className="mt-4 text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Loading Flows...</span>
+            <div className="w-10 h-10 border-4 border-white/10 border-t-white rounded-full animate-spin" />
+            <span className="mt-4 text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Loading...</span>
           </div>
         ) : (
           <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -161,7 +167,7 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
               {workflowList.map((work) => (
                 <div
                   key={work.id}
-                  className="group relative aspect-[3/4] rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-blue-500/30 hover:bg-white/[0.05] hover:-translate-y-1 shadow-2xl"
+                  className="group relative aspect-[3/4] rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm overflow-hidden transition-all duration-300 hover:border-white/20 hover:bg-white/[0.05] hover:-translate-y-1 shadow-2xl"
                 >
                   <Link href={`/workflow/${work.id}`} className="absolute inset-0 z-0">
                     {work.thumbnail ? (
@@ -190,7 +196,7 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                       <SlOptions size={16} />
                     </button>
                     {dropDown === work.id && (
-                      <div 
+                      <div
                         className="absolute right-0 mt-2 w-36 py-1 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2"
                         onMouseLeave={() => setDropDown(0)}
                       >
@@ -218,7 +224,7 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                   </div>
 
                   <div className="absolute bottom-0 left-0 w-full p-6 pt-12 bg-gradient-to-t from-[#030303] to-transparent flex flex-col gap-1 pointer-events-none">
-                    <h4 className={`text-base font-black truncate uppercase tracking-tight transition-colors ${work.thumbnail ? "text-white group-hover:text-blue-400" : "text-zinc-300 group-hover:text-white"}`}>
+                    <h4 className={`text-base font-black truncate uppercase tracking-tight transition-colors ${work.thumbnail ? "text-white group-hover:text-zinc-200" : "text-zinc-300 group-hover:text-white"}`}>
                       {work.name || "Untitled Flow"}
                     </h4>
                     <div className="flex items-center justify-between">
@@ -229,14 +235,14 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                   </div>
                 </div>
               ))}
-              
+
               {workflowList.length === 0 && !loading && (
                  <div className="col-span-full py-24 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-center bg-white/[0.01]">
                     <div className="p-6 bg-white/5 rounded-full mb-6">
                       <GoWorkflow size={48} className="text-zinc-700" />
                     </div>
-                    <h2 className="text-xl font-black text-white uppercase tracking-widest mb-2">No Private Flows</h2>
-                    <p className="text-zinc-500 mb-8 max-w-xs font-medium">Start your first orchestration by clicking the button above.</p>
+                    <h2 className="text-xl font-black text-white uppercase tracking-widest mb-2">No Workflows Yet</h2>
+                    <p className="text-zinc-500 mb-8 max-w-xs font-medium">Create your first workflow by clicking the button above.</p>
                  </div>
               )}
             </div>
@@ -245,27 +251,27 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
       </div>
 
       {renameId && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-in fade-in duration-300"
           onClick={() => setRenameId(null)}
         >
-          <div 
+          <div
             className="w-full max-w-sm bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 shadow-2xl animate-in zoom-in-95 duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col gap-6">
               <div className="text-center">
-                <h3 className="text-xl font-black uppercase tracking-widest text-white">Rename Flow</h3>
-                <p className="text-zinc-500 text-xs font-bold mt-1 uppercase tracking-tighter">Choose a descriptive identity</p>
+                <h3 className="text-xl font-black uppercase tracking-widest text-white">Rename Workflow</h3>
+                <p className="text-zinc-500 text-xs font-bold mt-1 uppercase tracking-tighter">Enter a new name</p>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">New Identity</label>
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Name</label>
                 <input
                   type="text"
                   value={workflowName}
                   autoFocus
                   onChange={(e) => setWorkflowName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all font-bold uppercase tracking-tight"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/40 transition-all font-bold uppercase tracking-tight"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleRenameWorkflow(renameId, workflowName);
                   }}
@@ -276,13 +282,13 @@ const WorkflowListingClient = ({ initialWorkflowList }) => {
                   onClick={() => setRenameId(null)}
                   className="flex-1 py-3 px-4 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 font-black uppercase tracking-widest text-xs transition-all"
                 >
-                  Discard
+                  Cancel
                 </button>
                 <button
                   onClick={() => handleRenameWorkflow(renameId, workflowName)}
-                  className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs transition-all shadow-lg"
+                  className="flex-1 py-3 px-4 rounded-xl bg-white hover:bg-zinc-100 text-black font-black uppercase tracking-widest text-xs transition-all shadow-lg"
                 >
-                  Commit changes
+                  Save
                 </button>
               </div>
             </div>

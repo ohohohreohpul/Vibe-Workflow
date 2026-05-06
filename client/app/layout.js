@@ -14,31 +14,29 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "0123 — Node-Based AI Workflow Builder",
   description:
-    "0123 is a free, open-source, self-hostable node-based AI workflow builder. Design, automate, and scale generative image and video pipelines with a clean visual editor — no subscription required.",
+    "0123 is a node-based AI workflow builder for generative image and video. Design, automate, and scale creative pipelines visually.",
   keywords: [
     "ai workflow builder",
     "node based ai editor",
     "generative ai pipeline",
     "visual ai workflow",
-    "self hosted ai",
     "ai image generation workflow",
     "ai video generation pipeline",
     "no code ai workflow",
-    "open source generative ai",
     "ai workflow automation",
     "0123",
   ],
   openGraph: {
     title: "0123 — Node-Based AI Workflow Builder",
     description:
-      "Free, self-hostable, node-based AI workflow builder. Design and automate generative image and video pipelines.",
+      "Node-based AI workflow builder for generative image and video. Design and automate creative pipelines with 0123.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "0123 — Node-Based AI Workflow Builder",
     description:
-      "Free, self-hostable, node-based AI workflow builder. Design and automate generative image and video pipelines.",
+      "Node-based AI workflow builder for generative image and video. Design and automate creative pipelines with 0123.",
   },
 };
 
